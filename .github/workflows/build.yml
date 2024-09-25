@@ -40,11 +40,11 @@ jobs:
       - name: Build
         run: msbuild SimpleHeels.sln /p:Configuration=Release
           
-      - name: Extract Artifact
+      - name: Create ZIP Archive
         run: |
-          Expand-Archive -Force ./bin/Release/SimpleHeels/latest.zip ./Artifact
-
+          Compress-Archive -Path './bin/Release/*' -DestinationPath './bin/Release/SimpleHeels.zip'
+          
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v3.1.2
         with:
-          path: ./Artifact/*
+          path: ./bin/Release/SimpleHeels.zip
