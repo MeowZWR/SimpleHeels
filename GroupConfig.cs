@@ -13,7 +13,7 @@ public class GroupCharacter {
 public class GroupConfig : CharacterConfig {
     public List<GroupCharacter> Characters = new();
     public HashSet<uint> Clans = new();
-    public string Label = "New Group";
+    public string Label = "新建组";
     public bool MatchFeminine = true;
     public bool MatchMasculine = true;
 

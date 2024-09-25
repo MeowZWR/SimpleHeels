@@ -16,40 +16,40 @@ public static class Changelog {
     private static bool _isOldExpanded;
 
     private static void Changelogs() {
-        ChangelogFor(10.11f, "0.10.1.1", "Fixed relative emote offsets not applying through Mare Synchronos.");
+        ChangelogFor(10.11f, "0.10.1.1", "修复了通过月海同步器应用相对情感动作偏移时未生效的问题。");
         ChangelogFor(10.10f, "0.10.1.0", () => {
-            C("Added ability to make emote offsets apply relative to equipment offsets.");
-            C("This will allow an emote offset to apply a rotation, but keep the original offset from shoes you are wearing, for example.", 2);
+            C("新增了使情感动作偏移相对于装备偏移生效的功能。");
+            C("例如，这将允许情感动作偏移应用旋转，但保持原始鞋子偏移。", 2);
         });
-        ChangelogFor(10.06f, "0.10.0.6", "Added ability to reapply temp offsets.");
+        ChangelogFor(10.06f, "0.10.0.6", "新增了重新应用临时偏移的功能。");
         ChangelogFor(10.05f, "0.10.0.5", () => {
-            C("Added a button to allow mod developers to copy offset attributes to clipboard.");
-            C("Disabled Simple Heels model attribute editor.");
+            C("新增了一个按钮，允许模组开发者将偏移属性复制到剪贴板。");
+            C("禁用了 Simple Heels 模型属性编辑器。");
         });
-        ChangelogFor(10.0f, "0.10.0.0", "Updated for Dawntrail");
-        ChangelogFor(9.35f, "0.9.3.5", "Fix support for new worlds.");
-        ChangelogFor(9.34f, "0.9.3.4", "Fixed issue causing other players to appear to teleport for a brief moment when using emotes with precise positioning.");
+        ChangelogFor(10.0f, "0.10.0.0", "更新以支持「金曦之遗辉」。");
+        ChangelogFor(9.35f, "0.9.3.5", "修复了对新世界的支持。");
+        ChangelogFor(9.34f, "0.9.3.4", "修复了使用精确定位情感动作时导致其他玩家短暂瞬移的问题。");
         ChangelogFor(9.31f, "0.9.3.1", () => {
-            C("Added option to allow right clicking offset inputs to return to zero.");
-            C("Added button to emote offsets to reset all values to zero.");
-            C("Increased range for precise positioning.");
+            C("新增了右键点击偏移输入返回零值的选项。");
+            C("为情感动作偏移新增了重置所有值为零的按钮。");
+            C("增加了精确定位的范围。");
         });
-        ChangelogFor(9.3f, "0.9.3.0", "Added optional precise position sharing when performing looping emotes.");
-        ChangelogFor(9.2f, "0.9.2.0", "Added optional stationary minion position sharing.");
-        ChangelogFor(9.13f, "0.9.1.3", "Fix Plus/Minus buttons applying change multiple times per click.");
-        ChangelogFor(9.12f, "0.9.1.2", "Apply temp offsets from synced players to gpose clones.");
+        ChangelogFor(9.3f, "0.9.3.0", "添加了可选的精确定位共享功能，当执行循环情感动作时生效。");
+        ChangelogFor(9.2f, "0.9.2.0", "增加了同步静态宠物位置的选项。");
+        ChangelogFor(9.13f, "0.9.1.3", "修复单击加号/减号按钮时会连击的问题。");
+        ChangelogFor(9.12f, "0.9.1.2", "将来自同步玩家的临时偏移应用到集体动作模式。");
         ChangelogFor(9.1f, "0.9.1.0", () => {
-            C("Added Temporary Offsets");
-            C("Allows setting offsets that are not saved into configs.", 1);
-            C("Overrides all other active offsets.", 1);
-            C("Edited from overlay window.", 1);
+            C("添加临时偏移：");
+            C("允许设置不会保存到配置中的偏移。", 1);
+            C("可覆盖所有其他激活的偏移。", 1);
+            C("从叠加层窗口编辑。", 1);
             C("/heels temp", 2);
-            C("Can lock and customize overlay window in the plugin settings.", 2);
+            C("可以在插件设置中锁定和自定义叠加层窗口。", 2);
         });
-        ChangelogFor(9.08f, "0.9.0.8", "Fixed reporting emote offsets to other plugins.");
+        ChangelogFor(9.08f, "0.9.0.8", "修正了向其他插件报告情感动作偏移时出现的问题。");
         ChangelogFor(9.07f, "0.9.0.7", () => {
-            C("Added an option to allow group offsets to partially apply to minions.");
-            C("Removed legacy data from synced offsets.");
+            C("在设置里添加了一个选项，允许在组分配中将偏移应用于宠物。");
+            C("已删除用于同步偏移的旧数据。");
         });
         ChangelogFor(9.06f, "0.9.0.6", "Attempt to fix the positioning of other players in GPose.");
         ChangelogFor(9.05f, "0.9.0.5", () => {
@@ -134,11 +134,11 @@ public static class Changelog {
     private static void Title() {
         if (_displayedTitle) return;
         _displayedTitle = true;
-        ImGui.Text("Changelog");
+        ImGui.Text("更新日志");
 
         if (!_showAll && _config != null) {
             ImGui.SameLine();
-            if (ImGui.SmallButton("Dismiss")) _config.DismissedChangelog = _latestChangelog;
+            if (ImGui.SmallButton("忽略")) _config.DismissedChangelog = _latestChangelog;
         }
 
         ImGuiExt.Separator();
@@ -148,7 +148,7 @@ public static class Changelog {
         _configIndex++;
         if (version > _latestChangelog) _latestChangelog = version;
         if (!_showAll && _config != null && _config.DismissedChangelog >= version) return;
-        if (_configIndex == 4) _isOldExpanded = ImGui.TreeNodeEx("Old Versions", ImGuiTreeNodeFlags.NoTreePushOnOpen);
+        if (_configIndex == 4) _isOldExpanded = ImGui.TreeNodeEx("旧版本", ImGuiTreeNodeFlags.NoTreePushOnOpen);
         if (_configIndex >= 4 && _isOldExpanded == false) return;
         Title();
         ImGui.Text($"{label}:");
