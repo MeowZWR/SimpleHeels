@@ -25,6 +25,7 @@ using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 using SimpleHeels.Files;
+using static FFXIVClientStructs.FFXIV.Client.UI.Misc.DataCenterHelper;
 using World = Lumina.Excel.GeneratedSheets2.World;
 using WorldDCGroupType = Lumina.Excel.GeneratedSheets2.WorldDCGroupType;
 
@@ -906,18 +907,43 @@ public class ConfigWindow : Window {
             }
         }
 
-        if (characterConfig is not IpcCharacterConfig && config.ShowCopyUi && newWorld != 0) {
+        if (characterConfig is not IpcCharacterConfig && config.ShowCopyUi && newWorld != 0)
+        {
             ImGui.InputText("角色名称", ref newName, 64);
             var worldName = PluginService.Data.GetExcelSheet<World>()!.GetRow(newWorld)!.Name.ToDalamudString().TextValue;
-            if (ImGui.BeginCombo("世界", worldName)) {
+            if (ImGui.BeginCombo("世界", worldName))
+            {
                 var lastDc = string.Empty;
-                foreach (var world in PluginService.Data.GetExcelSheet<World>()!.Where(w => w.IsPlayerWorld()).OrderBy(w => w.DataCenter?.Value?.Name.RawString ?? string.Empty).ThenBy(w => w.Name.ToDalamudString().TextValue, StringComparer.OrdinalIgnoreCase)) {
-                    if (lastDc != world.DataCenter?.Value?.Name.RawString) {
+
+                // 添加中文世界
+                foreach (var (id, name, dataCenter) in GetChineseWorlds())
+                {
+                    if (lastDc != dataCenter)
+                    {
+                        ImGui.TextDisabled(dataCenter);
+                        lastDc = dataCenter;
+                    }
+
+                    if (ImGui.Selectable($"    {name}", id == newWorld))
+                    {
+                        newWorld = id;
+                    }
+                }
+
+                // 原有的世界选择逻辑
+                foreach (var world in PluginService.Data.GetExcelSheet<World>()!
+                    .Where(w => w.IsPlayerWorld())
+                    .OrderBy(w => w.DataCenter?.Value?.Name.RawString ?? string.Empty)
+                    .ThenBy(w => w.Name.ToDalamudString().TextValue, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (lastDc != world.DataCenter?.Value?.Name.RawString)
+                    {
                         ImGui.TextDisabled(world.DataCenter?.Value?.Name.RawString ?? string.Empty);
                         lastDc = world.DataCenter?.Value?.Name.RawString ?? string.Empty;
                     }
-                    
-                    if (ImGui.Selectable($"  {world.Name.ToDalamudString().TextValue}", world.RowId == newWorld)) {
+
+                    if (ImGui.Selectable($"  {world.Name.ToDalamudString().TextValue}", world.RowId == newWorld))
+                    {
                         newWorld = world.RowId;
                     }
                 }
@@ -1775,6 +1801,61 @@ public class ConfigWindow : Window {
             }
         }
     }
+
+    private static IEnumerable<(uint Id, string Name, string DataCenter)> GetChineseWorlds()
+    {
+        // 定义中国大区的服务器
+        var servers = new Dictionary<string, (uint Id, string Name)[]>
+        {
+            ["陆行鸟"] =
+            [
+            (1175u, "晨曦王座"),
+            (1174u, "沃仙曦染"),
+            (1173u, "宇宙和音"),
+            (1167u, "红玉海"),
+            (1060u, "萌芽池"),
+            (1081u, "神意之地"),
+            (1044u, "幻影群岛"),
+            (1042u, "拉诺西亚"),
+        ],
+            ["莫古力"] =
+            [
+            (1121u, "拂晓之间"),
+            (1166u, "龙巢神殿"),
+            (1113u, "旅人栈桥"),
+            (1076u, "白金幻象"),
+            (1176u, "梦羽宝境"),
+            (1171u, "神拳痕"),
+            (1170u, "潮风亭"),
+            (1172u, "白银乡"),
+        ],
+            ["猫小胖"] =
+            [
+            (1179u, "琥珀原"),
+            (1178u, "柔风海湾"),
+            (1177u, "海猫茶屋"),
+            (1169u, "延夏"),
+            (1106u, "静语庄园"),
+            (1045u, "摩杜纳"),
+            (1043u, "紫水栈桥"),
+        ],
+            ["豆豆柴"] =
+            [
+            (1201u, "红茶川"),
+            (1186u, "伊修加德"),
+            (1180u, "太阳海岸"),
+            (1183u, "银泪湖"),
+            (1192u, "水晶塔"),
+            (1202u, "萨雷安"),
+            (1203u, "加雷马"),
+            (1200u, "亚马乌罗提"),
+        ]
+        };
+
+        // 合并所有服务器并返回
+        return servers.SelectMany(dc => dc.Value.Select(w => (w.Id, w.Name, dc.Key)));
+    }
+
 
     private void ShowActiveOffsetMarker(bool show, bool isEnabled, bool isActive, string tooltipText) {
         if (!show) {
