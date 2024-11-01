@@ -106,7 +106,7 @@ public sealed unsafe class TempOffsetOverlay : Window {
                 if (rot >= 360) rot -= 360;
                 tempOffset.R = rot * MathF.PI / 180f;
             }
-            if (config.TempOffsetWindowTooltips && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("旋转");
+            if (config.TempOffsetWindowTooltips && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("左右旋转");
 
 
             if (config.TempOffsetPitchRoll) {
@@ -117,7 +117,7 @@ public sealed unsafe class TempOffsetOverlay : Window {
                     if (pitch >= 360) pitch -= 360;
                     tempOffset.Pitch = pitch * MathF.PI / 180f;
                 }
-                if (config.TempOffsetWindowTooltips && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("俯仰");
+                if (config.TempOffsetWindowTooltips && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("前后俯仰");
 
                 
                 var roll = tempOffset.Roll * 180f / MathF.PI;
@@ -127,7 +127,7 @@ public sealed unsafe class TempOffsetOverlay : Window {
                     if (roll >= 360) roll -= 360;
                     tempOffset.Roll = roll * MathF.PI / 180f;
                 }
-                if (config.TempOffsetWindowTooltips && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("横滚");
+                if (config.TempOffsetWindowTooltips && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("两侧横滚");
             }
             
             

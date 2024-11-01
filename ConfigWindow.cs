@@ -712,9 +712,9 @@ public class ConfigWindow : Window {
 
                     ImGui.Checkbox("显示加号/减号按钮", ref config.TempOffsetWindowPlusMinus);
 
-                    ImGui.Checkbox("显示小工具/坐标轴", ref config.TempOffsetShowGizmo);
+                    ImGui.Checkbox("显示坐标轴工具", ref config.TempOffsetShowGizmo);
                     ImGui.SameLine();
-                    ImGui.TextDisabled("当临时偏移窗口打开并按住 SHIFT 键时，将显示小工具。");
+                    ImGui.TextDisabled("当临时偏移窗口打开并按住 SHIFT 键时，将显示坐标轴。");
                     
                     ImGui.Checkbox("启用俯仰/横滚", ref config.TempOffsetPitchRoll);
                 }
