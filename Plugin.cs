@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Command;
@@ -20,6 +21,7 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using World = Lumina.Excel.GeneratedSheets2.World;
 
 namespace SimpleHeels;
 
@@ -88,8 +90,11 @@ public unsafe class Plugin : IDalamudPlugin {
         pluginInterface.UiBuilder.Draw += windowSystem.Draw;
         pluginInterface.UiBuilder.OpenConfigUi += () => OnCommand(string.Empty, string.Empty);
 
-        PluginService.Commands.AddHandler("/heels", new CommandInfo(OnCommand) { HelpMessage = $"打开 {Name} 的配置窗口。", ShowInHelp = true });
-        
+        PluginService.Commands.AddHandler("/heels", new CommandInfo(OnCommand) { 
+            HelpMessage = $"打开 {Name} 配置窗口。\n" +
+            "/heels renamechar \"<源角色名>|<源世界>\" \"<目标角色名>|<目标世界>\" → 将现有角色配置重命名为新角色配置", ShowInHelp = true 
+        });
+
         ApiProvider.Init(this);
         PluginService.Framework.Update += OnFrameworkUpdate;
         PluginService.HoodProvider.InitializeFromAttributes(this);
@@ -116,6 +121,9 @@ public unsafe class Plugin : IDalamudPlugin {
     public static Dictionary<EmoteIdentifier, TempOffset> PreviousTempOffsets { get; } = new();
 
     private float[] RotationOffsets { get; } = new float[Constants.ObjectLimit];
+    private PitchRoll[] PitchRolls { get; } = new PitchRoll[Constants.ObjectLimit];
+
+    private byte[] SetGposeRotationCounter { get; } = new byte[Constants.ObjectLimit];
 
     public static Dictionary<uint, IpcCharacterConfig> IpcAssignedData { get; } = new();
 
@@ -258,9 +266,25 @@ public unsafe class Plugin : IDalamudPlugin {
     }
 
     private void* SetDrawRotationDetour(GameObject* gameObject, float rotation) {
-        if (gameObject->ObjectIndex < Constants.ObjectLimit && ManagedIndex[gameObject->ObjectIndex])
+        if (gameObject->ObjectIndex >= Constants.ObjectLimit || ManagedIndex[gameObject->ObjectIndex] == false) {
+            return setDrawRotationHook!.Original(gameObject, rotation);
+        }
+
+        try {
             rotation += RotationOffsets[gameObject->ObjectIndex];
-        return setDrawRotationHook!.Original(gameObject, rotation);
+            return setDrawRotationHook!.Original(gameObject, rotation);
+        } finally {
+            if (gameObject->DrawObject != null) {
+
+                if (!PluginService.ClientState.IsGPosing || SetGposeRotationCounter[gameObject->ObjectIndex] > 0) {
+                    if (SetGposeRotationCounter[gameObject->ObjectIndex] > 0) SetGposeRotationCounter[gameObject->ObjectIndex] -= 1;
+                    var t = FFXIVClientStructs.FFXIV.Common.Math.Quaternion.CreateFromYawPitchRoll(gameObject->Rotation + rotation, PitchRolls[gameObject->ObjectIndex].Pitch, PitchRolls[gameObject->ObjectIndex].Roll);
+                    gameObject->DrawObject->Rotation = t;
+                }
+                
+                
+            }
+        }
     }
 
     private void* CloneActorDetour(Character** destinationArray, Character* source, uint copyFlags) {
@@ -283,6 +307,9 @@ public unsafe class Plugin : IDalamudPlugin {
                     TempOffsets[destination->GameObject.ObjectIndex] = TempOffsets[source->GameObject.ObjectIndex];
                     TempOffsetEmote[destination->GameObject.ObjectIndex] = TempOffsetEmote[source->GameObject.ObjectIndex];
                 }
+
+                PitchRolls[destination->GameObject.ObjectIndex] = PitchRolls[source->GameObject.ObjectIndex];
+                SetGposeRotationCounter[destination->GameObject.ObjectIndex] = 60;
                 
                 destination->GameObject.DrawOffset = source->GameObject.DrawOffset;
                 if (BaseOffsets.TryGetValue(source->GameObject.ObjectIndex, out var baseOffset)) {
@@ -376,11 +403,10 @@ public unsafe class Plugin : IDalamudPlugin {
                 setDrawOffset!.Original(obj, offset.X, offset.Y, offset.Z);
             }
         }
-        
+
         ManagedIndex[obj->ObjectIndex] = true;
         RotationOffsets[obj->ObjectIndex] = offsetProvider.GetRotation();
-        
-        
+        PitchRolls[obj->ObjectIndex] = offsetProvider.GetPitchRoll();
         
         return false;
     }
@@ -410,7 +436,8 @@ public unsafe class Plugin : IDalamudPlugin {
             ManagedIndex[updateIndex] = false;
             BaseOffsets.Remove(updateIndex);
             RotationOffsets[updateIndex] = 0;
-            if (updateIndex == 0) ApiProvider.UpdateLocal(Vector3.Zero, 0);
+            PitchRolls[updateIndex] = PitchRoll.Zero;
+            if (updateIndex == 0) ApiProvider.UpdateLocal(Vector3.Zero, 0, PitchRoll.Zero);
             return r;
         }
 
@@ -506,8 +533,10 @@ public unsafe class Plugin : IDalamudPlugin {
         
         ManagedIndex[obj->ObjectIndex] = true;
         RotationOffsets[obj->ObjectIndex] = offsetProvider.GetRotation();
+        PitchRolls[obj->ObjectIndex] = offsetProvider.GetPitchRoll();
+        
 
-        if (updateIndex == 0) ApiProvider.UpdateLocal(appliedOffset, RotationOffsets[obj->ObjectIndex]);
+        if (updateIndex == 0) ApiProvider.UpdateLocal(appliedOffset, RotationOffsets[obj->ObjectIndex], PitchRolls[obj->ObjectIndex]);
         return true;
     }
 
@@ -540,31 +569,81 @@ public unsafe class Plugin : IDalamudPlugin {
     }
 
     private void OnCommand(string command, string args) {
-        switch (args.ToLowerInvariant()) {
-            case "debug":
-                IsDebug = !IsDebug;
-                return;
-            case "debug2":
-                extraDebug.Toggle();
-                return;
-            case "enable":
-                Config.Enabled = true;
-                RequestUpdateAll();
-                break;
-            case "disable":
-                Config.Enabled = false;
-                RequestUpdateAll();
-                break;
-            case "toggle":
-                Config.Enabled = !Config.Enabled;
-                RequestUpdateAll();
-                break;
-            case "temp":
-                Config.TempOffsetWindowOpen = !Config.TempOffsetWindowOpen;
-                break;
-            default:
-                configWindow.ToggleWithWarning();
-                break;
+        var splitArgs = Regex.Matches(args, @"[\""].+?[\""]|[^ ]+")
+            .Cast<Match>()
+            .Select(m => m.Value)
+            .ToList();
+        if (splitArgs.Count > 0) {
+            switch (splitArgs[0]
+                        .ToLowerInvariant()) {
+                case "debug":
+                    IsDebug = !IsDebug;
+                    return;
+                case "debug2":
+                    extraDebug.Toggle();
+                    return;
+                case "enable":
+                    Config.Enabled = true;
+                    RequestUpdateAll();
+                    break;
+                case "disable":
+                    Config.Enabled = false;
+                    RequestUpdateAll();
+                    break;
+                case "toggle":
+                    Config.Enabled = !Config.Enabled;
+                    RequestUpdateAll();
+                    break;
+                case "temp":
+                    Config.TempOffsetWindowOpen = !Config.TempOffsetWindowOpen;
+                    break;
+                case "renamechar":
+                    if (splitArgs.Count != 3) {
+                        break;
+                    }
+
+                    var sourceChar = splitArgs[1]
+                        .Replace("\"", String.Empty)
+                        .Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    var targetChar = splitArgs[2]
+                        .Replace("\"", String.Empty)
+                        .Split("|", StringSplitOptions.RemoveEmptyEntries);
+                    if (sourceChar.Length != 2 || targetChar.Length != 2 || sourceChar.SequenceEqual(targetChar)) {
+                        break;
+                    }
+
+                    var sourcename = sourceChar[0];
+                    var sourceworld = PluginService.Data.GetExcelSheet<World>()
+                        ?.FirstOrDefault(w => w.Name == sourceChar[1]);
+                    var targetname = targetChar[0];
+                    var targetworld = PluginService.Data.GetExcelSheet<World>()
+                        ?.FirstOrDefault(w => w.Name == targetChar[1]);
+                    if (targetworld == null || sourceworld == null) {
+                        break;
+                    }
+
+                    var newAlreadyExists = Config.WorldCharacterDictionary.ContainsKey(targetworld.RowId) && Config.WorldCharacterDictionary[targetworld.RowId]
+                        .ContainsKey(targetname);
+                    var oldAlreadyExists = Config.WorldCharacterDictionary.ContainsKey(sourceworld.RowId) && Config.WorldCharacterDictionary[sourceworld.RowId]
+                        .ContainsKey(sourcename);
+                    if (newAlreadyExists || !oldAlreadyExists || !Config.TryAddCharacter(targetname, targetworld.RowId)) {
+                        break;
+                    }
+
+                    Config.WorldCharacterDictionary[targetworld.RowId][targetname] = Config.WorldCharacterDictionary[sourceworld.RowId][sourcename];
+                    Config.WorldCharacterDictionary[sourceworld.RowId]
+                        .Remove(sourcename);
+                    if (Config.WorldCharacterDictionary[sourceworld.RowId].Count == 0) {
+                        Config.WorldCharacterDictionary.Remove(sourceworld.RowId);
+                    }
+
+                    break;
+                default:
+                    configWindow.ToggleWithWarning();
+                    break;
+            }
+        } else {
+            configWindow.ToggleWithWarning();
         }
     }
 

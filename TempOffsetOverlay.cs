@@ -6,6 +6,7 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using ImGuiNET;
+using ImGuizmoNET;
 
 namespace SimpleHeels;
 
@@ -76,12 +77,17 @@ public sealed unsafe class TempOffsetOverlay : Window {
         var edited = false;
 
         if (tempOffset == null) {
-            tempOffset = new TempOffset(0, 0, 0, 0);
+            tempOffset = new TempOffset();
             if (plugin.TryGetCharacterConfig(obj, out var characterConfig))
                 if (characterConfig.TryGetFirstMatch(obj, out var offsetProvider))
-                    (tempOffset.X, tempOffset.Y, tempOffset.Z, tempOffset.R) = offsetProvider;
+                    (tempOffset.X, tempOffset.Y, tempOffset.Z, tempOffset.R, tempOffset.Pitch, tempOffset.Roll) = offsetProvider;
         }
 
+
+        if (Plugin.Config.TempOffsetShowGizmo) {
+            edited = UIGizmoOverlay.Draw(tempOffset, obj, activeEmote != null, activeEmote != null);
+        }
+        
         ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X);
 
         edited |= ImGuiExt.FloatEditor("##height", ref tempOffset.Y, 0.0001f, forcePlusMinus: config.TempOffsetWindowPlusMinus);
@@ -100,7 +106,32 @@ public sealed unsafe class TempOffsetOverlay : Window {
                 if (rot >= 360) rot -= 360;
                 tempOffset.R = rot * MathF.PI / 180f;
             }
-            if (config.TempOffsetWindowTooltips && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("循环动作：旋转");
+            if (config.TempOffsetWindowTooltips && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("旋转");
+
+
+            if (config.TempOffsetPitchRoll) {
+                var pitch = tempOffset.Pitch * 180f / MathF.PI;
+                if (ImGuiExt.FloatEditor("##pitch", ref pitch, format: "%.0f", customPlusMinus: 1, forcePlusMinus: config.TempOffsetWindowPlusMinus)) {
+                    edited = true;
+                    if (pitch < 0) pitch += 360;
+                    if (pitch >= 360) pitch -= 360;
+                    tempOffset.Pitch = pitch * MathF.PI / 180f;
+                }
+                if (config.TempOffsetWindowTooltips && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("俯仰");
+
+                
+                var roll = tempOffset.Roll * 180f / MathF.PI;
+                if (ImGuiExt.FloatEditor("##roll", ref roll, format: "%.0f", customPlusMinus: 1, forcePlusMinus: config.TempOffsetWindowPlusMinus)) {
+                    edited = true;
+                    if (roll < 0) roll += 360;
+                    if (roll >= 360) roll -= 360;
+                    tempOffset.Roll = roll * MathF.PI / 180f;
+                }
+                if (config.TempOffsetWindowTooltips && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("横滚");
+            }
+            
+            
+            
         }
 
         if (showingActive && activeEmote != null && Plugin.PreviousTempOffsets.TryGetValue(activeEmote, out var prevValue)) {

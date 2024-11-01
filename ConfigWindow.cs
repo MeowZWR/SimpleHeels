@@ -22,6 +22,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using ImGuiNET;
+using ImGuizmoNET;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 using SimpleHeels.Files;
@@ -710,9 +711,15 @@ public class ConfigWindow : Window {
                     }
 
                     ImGui.Checkbox("显示加号/减号按钮", ref config.TempOffsetWindowPlusMinus);
+
+                    ImGui.Checkbox("显示小工具/坐标轴", ref config.TempOffsetShowGizmo);
+                    ImGui.SameLine();
+                    ImGui.TextDisabled("当临时偏移窗口打开并按住 SHIFT 键时，将显示小工具。");
+                    
+                    ImGui.Checkbox("启用俯仰/横滚", ref config.TempOffsetPitchRoll);
                 }
-                
-                
+
+
                 ImGuiExt.Separator();
 
 #if DEBUG
@@ -1376,7 +1383,7 @@ public class ConfigWindow : Window {
                         }
 
                         if (ImGui.Button($"添加路径：{pathDisplay}")) {
-                            characterConfig.HeelsConfig.Add(new HeelConfig() { PathMode = true, Path = path, Slot = slot, Enabled = !characterConfig.HeelsConfig.Any(h => h is { PathMode: true } && h.Path == path) });
+                            characterConfig.HeelsConfig.Add(new HeelConfig() { PathMode = true, Path = path, Slot = slot, Enabled = !characterConfig.HeelsConfig.Any(h => h is { PathMode: true } && string.Equals(h.Path, path, StringComparison.OrdinalIgnoreCase)) });
                         }
 
                         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
