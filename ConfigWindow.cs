@@ -920,8 +920,30 @@ public class ConfigWindow : Window {
             if (ImGui.BeginCombo("世界", worldName))
             {
                 var lastDc = string.Empty;
-                foreach (var world in PluginService.Data.GetExcelSheet<World>()!.Where(w => w.IsPlayerWorld()).OrderBy(w => w.DataCenter.Value.Name.ExtractText() ?? string.Empty).ThenBy(w => w.Name.ToDalamudString().TextValue, StringComparer.OrdinalIgnoreCase)) {
-                    if (lastDc != world.DataCenter.Value.Name.ExtractText()) {
+
+                // 添加国服世界
+                foreach (var (id, name, dataCenter) in GetChineseWorlds())
+                {
+                    if (lastDc != dataCenter)
+                    {
+                        ImGui.TextDisabled(dataCenter);
+                        lastDc = dataCenter;
+                    }
+
+                    if (ImGui.Selectable($"    {name}", id == newWorld))
+                    {
+                        newWorld = id;
+                    }
+                }
+
+                // 国际服世界逻辑
+                foreach (var world in PluginService.Data.GetExcelSheet<World>()!
+                    .Where(w => w.IsPlayerWorld())
+                    .OrderBy(w => w.DataCenter.Value.Name.ExtractText() ?? string.Empty)
+                    .ThenBy(w => w.Name.ToDalamudString().TextValue, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (lastDc != world.DataCenter.Value.Name.ExtractText())
+                    {
                         ImGui.TextDisabled(world.DataCenter.Value.Name.ExtractText() ?? string.Empty);
                         lastDc = world.DataCenter.Value.Name.ExtractText() ?? string.Empty;
                     }
