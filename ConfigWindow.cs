@@ -1195,7 +1195,7 @@ public class ConfigWindow : Window {
 
                             if (ImGui.IsItemHovered()) {
                                 var valueStr = heelConfig.Offset.ToString(CultureInfo.InvariantCulture).Replace("-", "n_").Replace(".", "_").Replace("0", "a").Replace("1", "b").Replace("2", "c").Replace("3", "d").Replace("4", "e").Replace("5", "f").Replace("6", "g").Replace("7", "h").Replace("8", "i").Replace("9", "j");
-                                ImGui.SetTooltip($"Copy Attribute Offset:\nheels_offset_{valueStr}");
+                                ImGui.SetTooltip($"复制属性偏移：\nheels_offset_{valueStr}");
                             }
                             
                             ImGui.SameLine();
