@@ -18,11 +18,11 @@ public static class Changelog {
 
     private static void Changelogs() {
         ChangelogFor(10.3f, "0.10.3.0", () => {
-            C("Made hotkey for temp offset gizmo configurable.");
-            C("Default changed to ALT for new installs.", 2);
-            C("Default will remain SHIFT for anyone who had plugin installed before version 0.10.3.", 2);
+            C("为临时偏移坐标轴添加了可配置的快捷键。");
+            C("新安装默认设置为 ALT。", 2);
+            C("对于在 0.10.3 版本之前安装插件的用户，默认设置将保持为 SHIFT。", 2);
             using (ImRaii.PushIndent(2)) {
-                ImGui.TextDisabled("Your hotkey is");
+                ImGui.TextDisabled("您的快捷键是");
                 ImGui.SameLine();
                 if (HotkeyHelper.DrawHotkeyConfigEditor("##TempOffsetGizmoHotkeyInChangelog", Plugin.Config.TempOffsetGizmoHotkey, out var newKeys, true)) {
                     Plugin.Config.TempOffsetGizmoHotkey = newKeys;
