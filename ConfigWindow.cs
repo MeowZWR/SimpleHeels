@@ -286,43 +286,43 @@ public class ConfigWindow : Window {
 
                     var drawPosition = obj->DrawObject->Object.Position;
 
-                    ImGui.Text($"Actual Y Position: {realPosition.Y}");
-                    ImGui.Text($"Drawn Y Position: {drawPosition.Y}");
+                    ImGui.Text($"实际 Y 位置： {realPosition.Y}");
+                    ImGui.Text($"绘制 Y 位置: {drawPosition.Y}");
                     if (ImGui.IsItemClicked()) {
                         ImGui.SetClipboardText($"{(ulong)(&obj->DrawObject->Object.Position.Y):X}");
                     }
 
-                    ImGui.Text($"Active Offset: {drawPosition.Y - realPosition.Y}");
+                    ImGui.Text($"活动偏移量：{drawPosition.Y - realPosition.Y}");
                     // ImGui.Text($"Expected Offset: {plugin.GetOffset(obj)}");
 
-                    ImGui.Text($"Height: {obj->GetHeight()}");
-                    ImGui.Text($"Mode: {character->Mode}, {character->ModeParam}");
+                    ImGui.Text($"高度：{obj->GetHeight()}");
+                    ImGui.Text($"模式：{character->Mode}, {character->ModeParam}");
 
-                    ImGui.Text($"Object Type: {obj->DrawObject->Object.GetObjectType()}");
+                    ImGui.Text($"对象类型：{obj->DrawObject->Object.GetObjectType()}");
                     if (obj->DrawObject->Object.GetObjectType() == ObjectType.CharacterBase) {
                         var characterBase = (CharacterBase*)obj->DrawObject;
-                        ImGui.Text($"Model Type: {characterBase->GetModelType()}");
+                        ImGui.Text($"模型类型：{characterBase->GetModelType()}");
                         if (characterBase->GetModelType() == CharacterBase.ModelType.Human) {
                             var human = (Human*)obj->DrawObject;
-                            ImGui.Text("Active Models:");
+                            ImGui.Text("激活模型：");
                             ImGui.Indent();
-                            ImGui.Text("Top:");
+                            ImGui.Text("身体：");
                             ImGui.Indent();
                             ImGui.Text($"ID: {human->Top.Id}, {human->Top.Variant}");
-                            ImGui.Text($"Name: {GetModelName(human->Top.Id, ModelSlot.Top, true) ?? "Does not replace feet"}");
-                            ImGui.Text($"Path: {Plugin.GetModelPath(human, ModelSlot.Top)}");
+                            ImGui.Text($"名称：{GetModelName(human->Top.Id, ModelSlot.Top, true) ?? "不替换脚部"}");
+                            ImGui.Text($"路径：{Plugin.GetModelPath(human, ModelSlot.Top)}");
                             ImGui.Unindent();
-                            ImGui.Text("Legs:");
+                            ImGui.Text("腿部：");
                             ImGui.Indent();
                             ImGui.Text($"ID: {human->Legs.Id}, {human->Legs.Variant}");
-                            ImGui.Text($"Name: {GetModelName(human->Legs.Id, ModelSlot.Legs, true) ?? "Does not replace feet"}");
-                            ImGui.Text($"Path: {Plugin.GetModelPath(human, ModelSlot.Legs)}");
+                            ImGui.Text($"名称：{GetModelName(human->Legs.Id, ModelSlot.Legs, true) ?? "不替换脚部"}");
+                            ImGui.Text($"路径：{Plugin.GetModelPath(human, ModelSlot.Legs)}");
                             ImGui.Unindent();
-                            ImGui.Text("Feet:");
+                            ImGui.Text("脚部：");
                             ImGui.Indent();
                             ImGui.Text($"ID: {human->Feet.Id}, {human->Feet.Variant}");
-                            ImGui.Text($"Name: {GetModelName(human->Feet.Id, ModelSlot.Feet)}");
-                            ImGui.Text($"Path: {Plugin.GetModelPath(human, ModelSlot.Feet)}");
+                            ImGui.Text($"名称：{GetModelName(human->Feet.Id, ModelSlot.Feet)}");
+                            ImGui.Text($"路径：{Plugin.GetModelPath(human, ModelSlot.Feet)}");
                             ImGui.Unindent();
 
                             ImGui.Unindent();
@@ -650,16 +650,16 @@ public class ConfigWindow : Window {
                 ImGui.SameLine();
                 ImGuiComponents.HelpMarker("当你正在通过月海同步器同步你的偏移值时，允许发送和接收静态宠物的位置。\n他人也须启用了此选项才能看到效果。\n仅适用于不会移动的宠物，比如软软垫子和浪人的篝火。");
 
-                ImGui.Checkbox("Enable Gizmo for Minion Positions", ref config.MinionGizmo);
+                ImGui.Checkbox("启用宠物位置坐标轴", ref config.MinionGizmo);
                 ImGui.SameLine();
 
-                ImGui.TextDisabled("Gizmo will be displayed while the temp offset window is open, and the");
+                ImGui.TextDisabled("临时偏移窗口打开时显示坐标轴，按住");
                 ImGui.SameLine();
                 if (HotkeyHelper.DrawHotkeyConfigEditor("##MinionGizmoDisplayHotkey", config.MinionGizmoHotkey, out var newMinionGizmoHotkey)) {
                     config.MinionGizmoHotkey = newMinionGizmoHotkey;
                 }
                 ImGui.SameLine();
-                ImGui.TextDisabled("binding is held.");
+                ImGui.TextDisabled("以显示。");
                 
                 ImGui.Checkbox("情感动作使用精确定位", ref config.UsePrecisePositioning);
                 ImGui.SameLine();

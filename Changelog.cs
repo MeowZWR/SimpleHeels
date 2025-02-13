@@ -18,23 +18,23 @@ public static class Changelog {
 
     private static void Changelogs() {
         ChangelogFor(10.5f, "0.10.5.0", () => {
-            C("Added minion positioning gizmo.");
+            C("添加了宠物坐标轴工具。");
             using (ImRaii.PushIndent(2)) {
                 using (ImRaii.PushColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled))) {
-                    ImGui.Checkbox("Enable Minion Gizmo", ref Plugin.Config.MinionGizmo);
+                    ImGui.Checkbox("启用宠物坐标轴", ref Plugin.Config.MinionGizmo);
                 }
 
                 if (!Plugin.Config.MinionGizmo) return;
-                ImGui.TextDisabled("While the temp offset window is open, Hold");
+                ImGui.TextDisabled("当临时偏移窗口开启时，按住");
                 ImGui.SameLine();
                 if (HotkeyHelper.DrawHotkeyConfigEditor("##MinionGizmoHotkeyInChangelog", Plugin.Config.MinionGizmoHotkey, out var newKeys)) {
                     Plugin.Config.TempOffsetGizmoHotkey = newKeys;
                 }
                 ImGui.SameLine();
-                ImGui.TextDisabled("to move your minion.");
+                ImGui.TextDisabled("来移动你的宠物。");
             }
         });
-        ChangelogFor(10.4f, "0.10.4.0", "Added ability to adjust temp offsets while on mounts.");
+        ChangelogFor(10.4f, "0.10.4.0", "添加了在骑乘时调整临时偏移的功能。");
         ChangelogFor(10.3f, "0.10.3.0", () => {
             C("为临时偏移坐标轴添加了可配置的快捷键。");
             C("新安装默认设置为 ALT。", 2);
