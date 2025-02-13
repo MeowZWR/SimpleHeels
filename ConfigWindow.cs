@@ -650,6 +650,16 @@ public class ConfigWindow : Window {
                 ImGui.SameLine();
                 ImGuiComponents.HelpMarker("当你正在通过月海同步器同步你的偏移值时，允许发送和接收静态宠物的位置。\n他人也须启用了此选项才能看到效果。\n仅适用于不会移动的宠物，比如软软垫子和浪人的篝火。");
 
+                ImGui.Checkbox("Enable Gizmo for Minion Positions", ref config.MinionGizmo);
+                ImGui.SameLine();
+
+                ImGui.TextDisabled("Gizmo will be displayed while the temp offset window is open, and the");
+                ImGui.SameLine();
+                if (HotkeyHelper.DrawHotkeyConfigEditor("##MinionGizmoDisplayHotkey", config.MinionGizmoHotkey, out var newMinionGizmoHotkey)) {
+                    config.MinionGizmoHotkey = newMinionGizmoHotkey;
+                }
+                ImGui.SameLine();
+                ImGui.TextDisabled("binding is held.");
                 
                 ImGui.Checkbox("情感动作使用精确定位", ref config.UsePrecisePositioning);
                 ImGui.SameLine();
