@@ -18,14 +18,14 @@ public static class Changelog {
 
     private static void Changelogs() {
         ChangelogFor(10.6f, "0.10.6.0", () => {
-            C("Added command to sync emote animations between all players");
+            C("新增同步情感动作的指令，使所有玩家的情感动作保持一致。");
             C("/heels emotesync", 1, ImGuiColors.DalamudViolet);
-            C("I didn't like spamming redraw until the game decided to start everyone at the same time", 1, ImGuiColors.DalamudGrey2);
-            C("Added commands to manipulate temp offsets.");
+            C("我不喜欢反复重绘，直到游戏凑巧让所有人动作同步。", 1, ImGuiColors.DalamudGrey2);
+            C("新增用于调整临时偏移量的指令。");
             C("/heels temp set [...]", 1, ImGuiColors.DalamudViolet);
             C("/heels temp add [...]", 1, ImGuiColors.DalamudViolet);
             C("/heels temp reset", 1, ImGuiColors.DalamudViolet);
-            C("Use commands without additional args for more information.", 2);
+            C("使用指令时不附加额外参数可获取更多信息。", 2);
         });
         ChangelogFor(10.5f, "0.10.5.0", () => {
             C("添加了宠物坐标轴工具。");
