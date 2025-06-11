@@ -137,13 +137,33 @@ public class ConfigWindow : Window {
     }
 
     public unsafe void DrawCharacterList() {
+        
+        var highlightName = PluginService.ClientState.LocalPlayer?.Name.TextValue ?? string.Empty;
+        var highlightWorld = PluginService.ClientState.LocalPlayer?.HomeWorld.RowId ?? 0;
+
+        if (config.IdentifyAs.TryGetValue(PluginService.ClientState.LocalContentId, out var identity)) {
+            highlightName = identity.Item1;
+            highlightWorld = identity.Item2;
+            var worldName = PluginService.Data.GetExcelSheet<World>().GetRowOrDefault(identity.Item2)?.Name.ExtractText() ?? $"UnknownWorld#{identity.Item2}";
+            ImGui.Text("Current Identity:");
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Reset")) {
+                config.IdentifyAs.Remove(PluginService.ClientState.LocalContentId);
+            } else {
+                ImGui.Text($"\t{identity.Item1}\n\t\t@ {worldName}");
+                        
+            }
+            ImGui.Separator();
+            
+        }
+        
         foreach (var (worldId, characters) in config.WorldCharacterDictionary.ToArray()) {
             var world = PluginService.Data.GetExcelSheet<World>()?.GetRowOrDefault(worldId);
             if (world == null) continue;
 
             ImGui.TextDisabled($"{world.Value.Name.ExtractText()}");
             ImGuiExt.Separator();
-
+            
             foreach (var (name, characterConfig) in characters.ToArray()) {
                 using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.ParsedGrey, characterConfig.Enabled == false)) {
                     if (ImGui.Selectable($"{name}##{world.Value.Name.ExtractText()}", selectedCharacter == characterConfig)) {
@@ -156,6 +176,18 @@ public class ConfigWindow : Window {
                     }
                 }
 
+                if (highlightName.Equals(name) && highlightWorld == worldId) {
+                    using (PluginService.PluginInterface.UiBuilder.IconFontHandle.Push())
+                    using (ImRaii.PushColor(ImGuiCol.Text, 0xFFAA55FF)) {
+                        ImGui.SameLine();
+                        ImGui.Text(FontAwesomeIcon.ArrowLeft.ToIconString());
+                    }
+
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Active Character");
+                    }
+                }
+                
                 if (ImGui.BeginPopupContextItem()) {
                     if (ImGui.Selectable($"从设置中移除“{name} @ {world.Value.Name.ExtractText()}”")) {
                         characters.Remove(name);
@@ -163,6 +195,10 @@ public class ConfigWindow : Window {
                         if (characters.Count == 0) {
                             config.WorldCharacterDictionary.Remove(worldId);
                         }
+                    }
+                    
+                    if (PluginService.ClientState.LocalContentId != 0 && ImGui.Selectable($"Identify as '{name} @ {world.Value.Name.ExtractText()}'")) {
+                        config.IdentifyAs[PluginService.ClientState.LocalContentId] = (name, world.Value.RowId);
                     }
 
                     ImGui.EndPopup();
@@ -369,7 +405,16 @@ public class ConfigWindow : Window {
             if (PluginService.ClientState.LocalPlayer != null) {
                 if (ImGuiComponents.IconButton(FontAwesomeIcon.User)) {
                     if (PluginService.ClientState.LocalPlayer != null) {
-                        config.TryAddCharacter(PluginService.ClientState.LocalPlayer.Name.TextValue, PluginService.ClientState.LocalPlayer.HomeWorld.RowId);
+
+                        var name = PluginService.ClientState.LocalPlayer.Name.TextValue;
+                        var world = PluginService.ClientState.LocalPlayer.HomeWorld.RowId;
+
+                        if (config.IdentifyAs.TryGetValue(PluginService.ClientState.LocalContentId, out var identity)) {
+                            name = identity.Item1;
+                            world = identity.Item2;
+                        }
+                        
+                        config.TryAddCharacter(name, world);
                     }
                 }
 
@@ -411,6 +456,19 @@ public class ConfigWindow : Window {
             }
 
             if (ImGui.IsItemHovered()) ImGui.SetTooltip("插件选项");
+            ImGui.SameLine();
+            if (ImGuiComponents.IconButton(FontAwesomeIcon.Save)) { 
+                Plugin.SaveConfig();
+            }
+
+            if (ImGui.IsItemHovered()) {
+                using (ImRaii.Tooltip()) {
+                    ImGui.Text("手动保存插件配置");
+                    ImGui.Separator();
+                    ImGui.Text("这通常不是必需的，但在某些情况下\n可能会有帮助。");
+                }
+            }
+
             iconButtonSize = ImGui.GetItemRectSize() + ImGui.GetStyle().ItemSpacing;
 
             if (!config.HideKofi) {
@@ -903,7 +961,7 @@ public class ConfigWindow : Window {
                 Plugin.RequestUpdateAll();
             }
         } else {
-            var player = PluginService.Objects.FirstOrDefault(t => t is IPlayerCharacter playerCharacter && playerCharacter.Name.TextValue == selectedName && playerCharacter.HomeWorld.RowId == selectedWorld);
+            var player =  PluginService.Objects.FirstOrDefault(t => t is IPlayerCharacter playerCharacter && ((playerCharacter.ObjectIndex == 0 && config.IdentifyAs.TryGetValue(PluginService.ClientState.LocalContentId, out var identity)) ? (identity.Item1 == selectedName && identity.Item2 == selectedWorld) : (playerCharacter.Name.TextValue == selectedName && playerCharacter.HomeWorld.RowId == selectedWorld)));
             if (player is IPlayerCharacter) {
                 activeCharacter = (GameObject*)player.Address;
                 activeCharacterAsCharacter = (Character*)activeCharacter;
@@ -1941,7 +1999,7 @@ public class ConfigWindow : Window {
     }
 
     public override void OnClose() {
-        PluginService.PluginInterface.SavePluginConfig(config);
+        Plugin.SaveConfig();
         base.OnClose();
     }
 

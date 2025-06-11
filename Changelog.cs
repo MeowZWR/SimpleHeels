@@ -17,6 +17,18 @@ public static class Changelog {
     private static bool _isOldExpanded;
 
     private static void Changelogs() {
+        ChangelogFor(10.73f, "0.10.7.3", "Added manual save button.");
+        ChangelogFor(10.72f, "0.10.7.2", () => {
+            C("Added optional 'delay' parameter to emotesync command.");
+            C("/heels emotesync delay [seconds]", 0, ImGuiColors.DalamudViolet);
+        });
+        ChangelogFor(10.7f, "0.10.7.0", () => {
+            C("Added ability to change selected 'identity'.");
+            C("When using another 'identity' configs for heels will be used for the configured character instead of the default.");
+            C("/heels identity set [name]", 0, ImGuiColors.DalamudViolet);
+            C("/heels identity reset", 0, ImGuiColors.DalamudViolet);
+            C("or Right click a character in the honorific config window and select 'Identity as'");
+        });
         ChangelogFor(10.6f, "0.10.6.0", () => {
             C("新增同步情感动作的指令，使所有玩家的情感动作保持一致。");
             C("/heels emotesync", 1, ImGuiColors.DalamudViolet);

@@ -8,6 +8,8 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading;
+using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Command;
@@ -24,12 +26,15 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using Lumina.Extensions;
+using Newtonsoft.Json;
 using Companion = FFXIVClientStructs.FFXIV.Client.Game.Character.Companion;
 using World = Lumina.Excel.Sheets.World;
 
 namespace SimpleHeels;
 
 public unsafe class Plugin : IDalamudPlugin {
+    public static CancellationTokenSource CancellationTokenSource { get; private set; } = new CancellationTokenSource();
     internal static bool IsDebug;
     private static bool _updateAll;
 
@@ -94,6 +99,7 @@ public unsafe class Plugin : IDalamudPlugin {
     }
     
     public Plugin(IDalamudPluginInterface pluginInterface) {
+        CancellationTokenSource = new CancellationTokenSource();
 #if DEBUG
         IsDebug = true;
 #endif
@@ -171,6 +177,7 @@ public unsafe class Plugin : IDalamudPlugin {
     public static Dictionary<uint, Dictionary<string, string>> Tags { get; } = new();
 
     public void Dispose() {
+        CancellationTokenSource.Cancel();
         isDisposing = true;
         PluginService.Log.Verbose("Dispose");
         PluginService.Framework.Update -= OnFrameworkUpdate;
@@ -183,7 +190,7 @@ public unsafe class Plugin : IDalamudPlugin {
         PluginService.Commands.RemoveHandler("/heels");
         windowSystem.RemoveAllWindows();
 
-        PluginService.PluginInterface.SavePluginConfig(Config);
+        SaveConfig();
 
         setDrawOffset?.Disable();
         setDrawOffset?.Dispose();
@@ -259,7 +266,11 @@ public unsafe class Plugin : IDalamudPlugin {
 
         string name;
         ushort homeWorld;
-        if (ActorMapping.TryGetValue(character->GameObject.ObjectIndex, out var mappedActor)) {
+
+        if (character->GameObject.ObjectIndex == 0 && Config.IdentifyAs.TryGetValue(PluginService.ClientState.LocalContentId, out var identity)) {
+            name = identity.Item1;
+            homeWorld = (ushort) identity.Item2;
+        } else  if (ActorMapping.TryGetValue(character->GameObject.ObjectIndex, out var mappedActor)) {
             name = mappedActor.name;
             homeWorld = mappedActor.homeWorld;
         } else {
@@ -287,7 +298,6 @@ public unsafe class Plugin : IDalamudPlugin {
             name = SeString.Parse(minion->Name).TextValue;
         }
         
-        
         if (Config.TryGetCharacterConfig(name, ushort.MaxValue, minion->DrawObject, out characterConfig) && characterConfig != null) return true;
 
         characterConfig = null;
@@ -311,6 +321,10 @@ public unsafe class Plugin : IDalamudPlugin {
     }
 
     private void* SetDrawRotationDetour(GameObject* gameObject, float rotation) {
+        if (!AllowAdvancedPositioning()) {
+            return setDrawRotationHook!.Original(gameObject, rotation);;
+        }
+        
         if (gameObject->ObjectIndex >= Constants.ObjectLimit || ManagedIndex[gameObject->ObjectIndex] == false) {
             return setDrawRotationHook!.Original(gameObject, rotation);
         }
@@ -330,6 +344,12 @@ public unsafe class Plugin : IDalamudPlugin {
                 
             }
         }
+    }
+
+    private bool AllowAdvancedPositioning() {
+        if (PluginService.Condition.Any(ConditionFlag.WatchingCutscene, ConditionFlag.WatchingCutscene78, ConditionFlag.OccupiedInCutSceneEvent)) return false;
+
+        return true;
     }
 
     private void* CloneActorDetour(Character** destinationArray, Character* source, uint copyFlags) {
@@ -547,8 +567,9 @@ public unsafe class Plugin : IDalamudPlugin {
         }
 
         var appliedOffset = offsetProvider.GetOffset();
+        if (!AllowAdvancedPositioning()) appliedOffset = appliedOffset with { X = 0, Z = 0 };
         offset += appliedOffset;
-        if (updateIndex != 0 && Config.UsePrecisePositioning && character->Mode is CharacterModes.EmoteLoop or CharacterModes.InPositionLoop && IpcAssignedData.TryGetValue(obj->EntityId, out var ipcCharacter) && ipcCharacter.EmotePosition != null) {
+        if (updateIndex != 0 && Config.UsePrecisePositioning && character->Mode is CharacterModes.EmoteLoop or CharacterModes.InPositionLoop && IpcAssignedData.TryGetValue(obj->EntityId, out var ipcCharacter) && ipcCharacter.EmotePosition != null && AllowAdvancedPositioning()) {
             using (PerformanceMonitors.Run($"Calculate Precise Position Offset:{updateIndex}", Config.DetailedPerformanceLogging))
             using (PerformanceMonitors.Run("Calculate Precise Position Offset")) {
                 var pos = (Vector3) character->GameObject.Position;
@@ -620,7 +641,7 @@ public unsafe class Plugin : IDalamudPlugin {
             if (character->DrawObject == null) continue;
             if (character->DrawObject->GetObjectType() != ObjectType.CharacterBase) continue;
             if (((CharacterBase*)character->DrawObject)->GetModelType() != CharacterBase.ModelType.Human) continue;
-            var human = (Human*) character->DrawObject;
+            var human = (Human*)character->DrawObject;
             var emoteIden = EmoteIdentifier.Get(character);
             if (emoteIden == null) continue;
             var skeleton = human->Skeleton;
@@ -635,6 +656,42 @@ public unsafe class Plugin : IDalamudPlugin {
                     control->hkaAnimationControl.LocalTime = 0;
                 }
             }
+        }
+    }
+    
+    private void DoEmoteSync(List<string> splitArgs) {
+        var delay = 0f;
+        try {
+            for (var i = 0; i < splitArgs.Count; i++) {
+                switch (splitArgs[i].ToLowerInvariant()) {
+                    case "delay": {
+                        if (splitArgs.Count < i + 2) {
+                            PluginService.ChatGui.PrintError("Invalid Argument Syntax: delay <seconds>", Name, 500);
+                            return;
+                        }
+
+                        if (!float.TryParse(splitArgs[i + 1], out delay)) {
+                            PluginService.ChatGui.PrintError("Invalid Argument Syntax: delay <seconds>", Name, 500);
+                            return;
+                        }
+                        
+                        i++;
+                        break;
+                    }
+                    default: {
+                        PluginService.ChatGui.PrintError($"Invalid Argument: {splitArgs[i]}", Name, 500);
+                        return;
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            PluginService.Log.Error(ex, "Error parsing EmoteSync command.");
+        }
+        
+        if (delay <= 0) {
+            PluginService.Framework.RunOnFrameworkThread(DoEmoteSync);
+        } else {
+            PluginService.Framework.RunOnTick(DoEmoteSync, TimeSpan.FromSeconds(delay), cancellationToken: CancellationTokenSource.Token);
         }
     }
     
@@ -882,7 +939,7 @@ public unsafe class Plugin : IDalamudPlugin {
                     break;
                 case "syncemote":
                 case "emotesync":
-                    DoEmoteSync();
+                    DoEmoteSync(splitArgs[1..]);
                     break;
                 case "renamechar":
                     if (splitArgs.Count != 3) {
@@ -925,6 +982,66 @@ public unsafe class Plugin : IDalamudPlugin {
                     }
 
                     break;
+                case "identity":
+                    void HelpIdentitySet() {
+                        PluginService.ChatGui.Print(new SeStringBuilder().AddText("/heels identity set ").AddUiForeground("<name>", 35).AddText(" | ").AddUiForeground("[server]", 52).Build(), Name, 500);
+                    }
+                    void HelpIdentity() {
+                        HelpIdentitySet();
+                        PluginService.ChatGui.Print(new SeStringBuilder().AddText("/heels identity reset").Build(), Name, 500);
+                    }
+                    
+                    if (PluginService.ClientState.LocalContentId == 0 || PluginService.ClientState.LocalPlayer == null) return;
+                    if (splitArgs.Count < 2) {
+                        HelpIdentity();
+                        return;
+                    }
+
+                    switch (splitArgs[1]) {
+                        case "reset":
+                            Config.IdentifyAs.Remove(PluginService.ClientState.LocalContentId);
+                            SaveConfig();
+                            return;
+                        case "set":
+
+                            if (splitArgs.Count < 3) {
+                                HelpIdentitySet();
+                                return;
+                            }
+
+                            var nameServerSplit = string.Join(" ", splitArgs[2..]).Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+                            var name = nameServerSplit[0];
+                            var serverName = nameServerSplit.Length > 1 ? nameServerSplit[1] : string.Empty;
+                            var serverId = 0U;
+                            if (string.IsNullOrWhiteSpace(serverName)) {
+                                serverId = PluginService.ClientState.LocalPlayer.HomeWorld.RowId;
+                            } else {
+                                if (!uint.TryParse(serverName, out serverId)) {
+
+                                    var worldRow = PluginService.Data.GetExcelSheet<World>().FirstOrNull(w => w.Name.ExtractText().Equals(serverName, StringComparison.InvariantCultureIgnoreCase));
+                                    if (worldRow is { } world) {
+                                        serverId = world.RowId;
+                                    } else {
+                                        PluginService.ChatGui.PrintError($"World not found: '{serverName}'", Name, 500);
+                                        return;
+                                    }
+                                }
+                            }
+
+                            if (PluginService.Data.GetExcelSheet<World>().GetRowOrDefault(serverId) == null) {
+                                PluginService.ChatGui.PrintError($"World not found: 'World#{serverId}'", Name, 500);
+                                return;
+                            }
+                            
+                            Config.IdentifyAs[PluginService.ClientState.LocalContentId] = (name, serverId);
+                            SaveConfig();
+                            
+                            return;
+                        default:
+                            HelpIdentity();
+                            return;
+                    }
                 default:
                     configWindow.ToggleWithWarning();
                     break;
@@ -1004,4 +1121,15 @@ public unsafe class Plugin : IDalamudPlugin {
         var roll = go->Effects.TiltParam2Value;
         go->DrawObject->Rotation = FFXIVClientStructs.FFXIV.Common.Math.Quaternion.CreateFromYawPitchRoll(yaw, pitch, roll);
     }
+
+    public static void SaveConfig() {
+        try {
+            PluginService.Log.Information("Saving Plugin Config");
+            PluginService.PluginInterface.SavePluginConfig(Config);
+        } catch (Exception ex) {
+            PluginService.ChatGui.PrintError($"Failed to save config: {ex.Message}.", "Simple Heels", 500);
+            PluginService.Log.Error(ex, "Failed to save config.");
+        }
+    }
+    
 }
