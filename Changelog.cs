@@ -17,17 +17,17 @@ public static class Changelog {
     private static bool _isOldExpanded;
 
     private static void Changelogs() {
-        ChangelogFor(10.73f, "0.10.7.3", "Added manual save button.");
+        ChangelogFor(10.73f, "0.10.7.3", "新增手动保存按钮。");
         ChangelogFor(10.72f, "0.10.7.2", () => {
-            C("Added optional 'delay' parameter to emotesync command.");
-            C("/heels emotesync delay [seconds]", 0, ImGuiColors.DalamudViolet);
+            C("为emotesync指令添加了可选的'delay'参数。");
+            C("/heels emotesync delay [秒数]", 0, ImGuiColors.DalamudViolet);
         });
         ChangelogFor(10.7f, "0.10.7.0", () => {
-            C("Added ability to change selected 'identity'.");
-            C("When using another 'identity' configs for heels will be used for the configured character instead of the default.");
-            C("/heels identity set [name]", 0, ImGuiColors.DalamudViolet);
+            C("添加了更改选定'身份'的功能。");
+            C("使用另一个'身份'时，高跟鞋配置将用于配置的角色而不是默认角色。");
+            C("/heels identity set [名称]", 0, ImGuiColors.DalamudViolet);
             C("/heels identity reset", 0, ImGuiColors.DalamudViolet);
-            C("or Right click a character in the honorific config window and select 'Identity as'");
+            C("或在honorific 配置窗口中右键点击角色并选择'设为身份'");
         });
         ChangelogFor(10.6f, "0.10.6.0", () => {
             C("新增同步情感动作的指令，使所有玩家的情感动作保持一致。");
