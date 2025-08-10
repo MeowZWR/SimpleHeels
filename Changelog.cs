@@ -3,7 +3,7 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 
 namespace SimpleHeels;
 
@@ -17,6 +17,7 @@ public static class Changelog {
     private static bool _isOldExpanded;
 
     private static void Changelogs() {
+        ChangelogFor(10.75f, "0.10.7.5", "尝试修复了宠物旋转的bug。");
         ChangelogFor(10.73f, "0.10.7.3", "新增手动保存按钮。");
         ChangelogFor(10.72f, "0.10.7.2", () => {
             C("为emotesync指令添加了可选的'delay'参数。");
