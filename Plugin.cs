@@ -170,6 +170,8 @@ public unsafe class Plugin : IDalamudPlugin {
 
     private byte[] SetGposeRotationCounter { get; } = new byte[Constants.ObjectLimit];
 
+    public bool IsMinionAdjusted => _isMinionAdjusted;
+    
     public static Dictionary<uint, IpcCharacterConfig> IpcAssignedData { get; } = new();
 
     public static Dictionary<uint, (string name, ushort homeWorld)> ActorMapping { get; } = new();
@@ -364,6 +366,7 @@ public unsafe class Plugin : IDalamudPlugin {
     }
 
     private bool AllowAdvancedPositioning() {
+        if (PluginService.ClientState.IsGPosing) return true;
         if (PluginService.Condition.Any(ConditionFlag.WatchingCutscene, ConditionFlag.WatchingCutscene78, ConditionFlag.OccupiedInCutSceneEvent)) return false;
 
         return true;
@@ -545,7 +548,11 @@ public unsafe class Plugin : IDalamudPlugin {
             
                 if (Config.ApplyStaticMinionPositions && updateIndex == 0 && Utils.StaticMinions.Value.Contains(companion->BaseId)) {
                     UpdateCompanionRotation(companion);
-                    ApiProvider.UpdateMinion(companion->DrawObject->Object.Position, companion->DrawObject->Object.Rotation.EulerAngles.Y * MathF.PI / 180f, companion->Effects.TiltParam1Value, companion->Effects.TiltParam2Value);
+                    if (_isMinionAdjusted) {
+                        ApiProvider.UpdateMinion(companion->DrawObject->Object.Position, companion->DrawObject->Object.Rotation.EulerAngles.Y * MathF.PI / 180f, companion->Effects.TiltParam1Value, companion->Effects.TiltParam2Value);
+                    } else {
+                        ApiProvider.UpdateMinion(companion->DrawObject->Object.Position, companion->DrawObject->Object.Rotation.EulerAngles.Y * MathF.PI / 180f, 0, 0);
+                    }
                 }
             }
         }
@@ -652,15 +659,17 @@ public unsafe class Plugin : IDalamudPlugin {
                 UpdateObjectIndex(i);
     }
 
-    private void DoEmoteSync() {
+    private void DoEmoteSync(bool force) {
         foreach (var c in PluginService.Objects.Where(o => o is IPlayerCharacter)) {
             var character = (Character*)c.Address;
             if (character->DrawObject == null) continue;
             if (character->DrawObject->GetObjectType() != ObjectType.CharacterBase) continue;
             if (((CharacterBase*)character->DrawObject)->GetModelType() != CharacterBase.ModelType.Human) continue;
             var human = (Human*)character->DrawObject;
-            var emoteIden = EmoteIdentifier.Get(character);
-            if (emoteIden == null) continue;
+            if (!force) {
+                var emoteIden = EmoteIdentifier.Get(character);
+                if (emoteIden == null) continue;
+            }
             var skeleton = human->Skeleton;
             if (skeleton == null) continue;
             for (var i = 0; i < skeleton->PartialSkeletonCount && i < 1; ++i) {
@@ -678,6 +687,7 @@ public unsafe class Plugin : IDalamudPlugin {
     
     private void DoEmoteSync(List<string> splitArgs) {
         var delay = 0f;
+        var force = false;
         try {
             for (var i = 0; i < splitArgs.Count; i++) {
                 switch (splitArgs[i].ToLowerInvariant()) {
@@ -695,6 +705,10 @@ public unsafe class Plugin : IDalamudPlugin {
                         i++;
                         break;
                     }
+                    case "force": {
+                        force = true;
+                        break;
+                    }
                     default: {
                         PluginService.ChatGui.PrintError($"Invalid Argument: {splitArgs[i]}", Name, 500);
                         return;
@@ -706,9 +720,9 @@ public unsafe class Plugin : IDalamudPlugin {
         }
         
         if (delay <= 0) {
-            PluginService.Framework.RunOnFrameworkThread(DoEmoteSync);
+            PluginService.Framework.RunOnFrameworkThread(() => DoEmoteSync(force));
         } else {
-            PluginService.Framework.RunOnTick(DoEmoteSync, TimeSpan.FromSeconds(delay), cancellationToken: CancellationTokenSource.Token);
+            PluginService.Framework.RunOnTick(() => DoEmoteSync(force), TimeSpan.FromSeconds(delay), cancellationToken: CancellationTokenSource.Token);
         }
     }
     

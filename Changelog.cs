@@ -17,6 +17,7 @@ public static class Changelog {
     private static bool _isOldExpanded;
 
     private static void Changelogs() {
+        ChangelogFor(10.78f, "0.10.7.8", "修复情感动作偏移未正确在集体动作中应用的问题。");
         ChangelogFor(10.75f, "0.10.7.5", "尝试修复了宠物旋转的bug。");
         ChangelogFor(10.73f, "0.10.7.3", "新增手动保存按钮。");
         ChangelogFor(10.72f, "0.10.7.2", () => {

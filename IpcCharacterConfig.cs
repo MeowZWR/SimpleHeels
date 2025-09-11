@@ -29,7 +29,12 @@ public class IpcCharacterConfig : CharacterConfig {
             EmoteConfigs = characterConfig?.EmoteConfigs?.Where(e => e.Enabled).Select(e => e.IpcClone()).ToList() ?? new List<EmoteConfig>();
         }
 
-        if (Plugin.Tags.TryGetValue(player.EntityId, out var tags)) Tags = tags;
+        if (Plugin.Tags.TryGetValue(player.EntityId, out var tags)) {
+            foreach (var t in tags) {
+                Tags.TryAdd(t.Key, t.Value);
+            }
+        }
+
         if (player.ObjectIndex < Constants.ObjectLimit && Plugin.TempOffsets[player.ObjectIndex] != null) {
             TempOffset = Plugin.TempOffsets[player.ObjectIndex]?.Clone() ?? null;
         }
@@ -40,7 +45,11 @@ public class IpcCharacterConfig : CharacterConfig {
                 var drawObj = chr->CompanionData.CompanionObject->Character.GameObject.DrawObject;
                 if (drawObj != null) {
                     var p = drawObj->Object.Position;
-                    MinionPosition = new TempOffset(drawObj->Position.X, drawObj->Position.Y, drawObj->Position.Z, drawObj->Rotation.EulerAngles.Y * MathF.PI / 180, chr->CompanionObject->Effects.TiltParam1Value, chr->CompanionObject->Effects.TiltParam2Value);
+                    if (plugin.IsMinionAdjusted) {
+                        MinionPosition = new TempOffset(drawObj->Position.X, drawObj->Position.Y, drawObj->Position.Z, drawObj->Rotation.EulerAngles.Y * MathF.PI / 180, chr->CompanionObject->Effects.TiltParam1Value, chr->CompanionObject->Effects.TiltParam2Value);
+                    } else {
+                        MinionPosition = new TempOffset(drawObj->Position.X, drawObj->Position.Y, drawObj->Position.Z, drawObj->Rotation.EulerAngles.Y * MathF.PI / 180, 0, 0);
+                    }
                 }
             }
         }
