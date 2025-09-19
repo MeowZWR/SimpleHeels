@@ -39,7 +39,7 @@ public class PluginConfig : IPluginConfiguration {
     public bool TempOffsetShowGizmo = false;
     public VirtualKey[] TempOffsetGizmoHotkey = [];
 
-    public bool LivePoseEnabled = true;
+    public bool LivePoseEnabled = false;
 
     public bool MinionGizmo = false;
     public VirtualKey[] MinionGizmoHotkey = [ VirtualKey.MENU, VirtualKey.CONTROL];
@@ -50,7 +50,8 @@ public class PluginConfig : IPluginConfiguration {
 
     public Dictionary<uint, Dictionary<string, CharacterConfig>> WorldCharacterDictionary = new();
     public Dictionary<ulong, (string, uint)> IdentifyAs = new();
-    public int Version { get; set; } = 2;
+    public int Version { get; set; } = 2;    
+    public bool LivePoseForceOffApplied = false;
 
     public void Initialize() {
         if (TempOffsetGizmoHotkey.Length == 0) {
@@ -60,6 +61,11 @@ public class PluginConfig : IPluginConfiguration {
 
         if (MinionGizmoHotkey == TempOffsetGizmoHotkey) {
             MinionGizmoHotkey = [];
+        }
+        // Force disable LivePose once; user can re-enable manually afterwards.
+        if (!LivePoseForceOffApplied) {
+            LivePoseEnabled = false;
+            LivePoseForceOffApplied = true;
         }
         
         // Migrate Sit/Sleep offsets

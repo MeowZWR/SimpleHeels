@@ -17,6 +17,11 @@ public static class Changelog {
     private static bool _isOldExpanded;
 
     private static void Changelogs() {
+        ChangelogFor(11.01f, "0.11.0.3", () => {
+            C("LivePose 功能与 Customize+ 存在兼容性问题，此次更新采取以下措施：");
+            C("默认关闭 LivePose；", 1);
+            C("对已启用的用户将进行一次性强制关闭，需手动重新启用。", 1);
+        });
         ChangelogFor(11.00f, "0.11.0.0", () => {
             C("新增'LivePose'系统。");
             C("允许您像在Brio中一样调整单个骨骼的姿势。", 1);
