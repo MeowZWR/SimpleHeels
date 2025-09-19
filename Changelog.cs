@@ -17,6 +17,13 @@ public static class Changelog {
     private static bool _isOldExpanded;
 
     private static void Changelogs() {
+        ChangelogFor(11.00f, "0.11.0.0", () => {
+            C("新增'LivePose'系统。");
+            C("允许您像在Brio中一样调整单个骨骼的姿势。", 1);
+            C("在战斗中姿势将被禁用。", 1);
+            C("/heels livepose", 1, ImGuiColors.DalamudViolet);
+            C("进入GPose时会尝试将姿势复制到Brio。", 1);
+        });
         ChangelogFor(10.78f, "0.10.7.8", "修复情感动作偏移未正确在集体动作中应用的问题。");
         ChangelogFor(10.75f, "0.10.7.5", "尝试修复了宠物旋转的bug。");
         ChangelogFor(10.73f, "0.10.7.3", "新增手动保存按钮。");
