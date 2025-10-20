@@ -106,7 +106,7 @@ public static class ApiProvider {
             if (!_hasShownVersionWarning && Version.TryParse(assigned.PluginVersion, out var remoteVersion)) {
                 if (remoteVersion > Plugin.Version) {
                     _hasShownVersionWarning = true;
-                    PluginService.ChatGui.PrintError("SimpleHeels seems to be out of date. Please update to ensure synced characters are displayed correctly.", "Simple Heels", 500);
+                    PluginService.ChatGui.PrintError("SimpleHeels 插件似乎已过期。请更新以确保同步的角色能够正确显示。能用就无所谓。", "Simple Heels", 500);
                 }
             }
 
