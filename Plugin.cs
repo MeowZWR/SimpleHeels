@@ -107,7 +107,7 @@ public unsafe class Plugin : IDalamudPlugin {
         using var _ = PerformanceMonitors.Run($"Plugin Startup");
         pluginInterface.Create<PluginService>();
         
-        PluginService.Log.Information($"Starting SimpleHeels - D: {Util.GetGitHash()}- CS: {FFXIVClientStructs.ThisAssembly.Git.Commit}[{FFXIVClientStructs.ThisAssembly.Git.Commits}]");
+        PluginService.Log.Information($"Starting SimpleHeels - D: {Utils.GetGitHash()}- CS: {FFXIVClientStructs.ThisAssembly.Git.Commit}[{FFXIVClientStructs.ThisAssembly.Git.Commits}]");
         
         
         DoConfigBackup(pluginInterface);

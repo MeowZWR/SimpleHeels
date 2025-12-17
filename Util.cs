@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Lumina.Excel.Sheets;
 
@@ -35,5 +36,21 @@ public static unsafe class Utils {
 
     public static string OrIfWhitespace(this string? s, string replacement) {
         return string.IsNullOrWhiteSpace(s) ? replacement : s;
+    }
+
+    public static string GetGitHash() {
+        try {
+            var assembly = Assembly.GetExecutingAssembly();
+            var informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            if (!string.IsNullOrEmpty(informationalVersion)) {
+                var plusIndex = informationalVersion.IndexOf('+');
+                if (plusIndex >= 0 && plusIndex < informationalVersion.Length - 1) {
+                    return informationalVersion.Substring(plusIndex + 1);
+                }
+            }
+        } catch {
+            // 忽略错误
+        }
+        return "unknown";
     }
 }

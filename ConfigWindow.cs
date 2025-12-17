@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -836,7 +836,7 @@ public class ConfigWindow : Window {
                 if (Plugin.IsDebug) {
                     if (ImGui.TreeNode("调试")) {
                         
-                        ImGui.Text($"Dalamud: {Util.GetGitHash()}- ClientStructs: {FFXIVClientStructs.ThisAssembly.Git.Commit}[{FFXIVClientStructs.ThisAssembly.Git.Commits}]");
+                        ImGui.Text($"Dalamud: {Utils.GetGitHash()}- ClientStructs: {FFXIVClientStructs.ThisAssembly.Git.Commit}[{FFXIVClientStructs.ThisAssembly.Git.Commits}]");
                         
                         ImGui.Text("上次报告的数据：");
                         ImGui.Indent();
