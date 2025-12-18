@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Numerics;
 using Dalamud.Interface;
@@ -23,8 +23,15 @@ public static class ImGuiExt {
         using (ImRaii.PushColor(ImGuiCol.FrameBg, ImGui.GetColorU32(ImGuiCol.FrameBgHovered), hoverColor && ImGui.IsMouseHoveringRect(pos, pos + frameSize))) {
             if (ImGui.BeginChildFrame(ImGui.GetID($"iconTextFrame_{previewIcon}_{previewText}"), frameSize)) {
                 var dl = ImGui.GetWindowDrawList();
-                var icon = PluginService.TextureProvider.GetFromGameIcon(previewIcon).GetWrapOrDefault();
-                if (icon != null) dl.AddImage(icon.Handle, pos, pos + new Vector2(size.Y));
+                // Handle missing icon exceptions gracefully in IconTextFrame
+                try {
+                    if (previewIcon > 0) {
+                        var icon = PluginService.TextureProvider.GetFromGameIcon(previewIcon).GetWrapOrDefault();
+                        if (icon != null) dl.AddImage(icon.Handle, pos, pos + new Vector2(size.Y));
+                    }
+                } catch {
+                    // Ignore missing icon errors, only show text
+                }
                 var textSize = ImGui.CalcTextSize(previewText);
                 dl.AddText(pos + new Vector2(size.Y + ImGui.GetStyle().FramePadding.X, size.Y / 2f - textSize.Y / 2f), ImGui.GetColorU32(ImGuiCol.Text), previewText);
             }
