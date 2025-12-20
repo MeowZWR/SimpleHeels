@@ -1024,8 +1024,7 @@ public class ConfigWindow : Window {
         if (characterConfig is not IpcCharacterConfig && config.ShowCopyUi && newWorld != 0)
         {
             ImGui.InputText("角色名称", ref newName, 64);                        
-            var playerCharacter = PluginService.ClientState.LocalPlayer;
-            var homeWorldId = playerCharacter?.HomeWorld.RowId ?? 0;
+            var homeWorldId = PluginService.Objects.LocalPlayer?.HomeWorld.RowId ?? 0;
                         
             if (newWorld == 0)
             {
