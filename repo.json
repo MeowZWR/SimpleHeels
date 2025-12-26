@@ -6,16 +6,16 @@
     "Description": "调整穿着高跟鞋以及做情感动作时的偏移量。",
     "Punchline": "调整穿着高跟鞋以及做情感动作时的偏移量。",
     "RepoUrl": "https://github.com/MeowZWR/SimpleHeels",
-    "AssemblyVersion": "0.11.0.21",
-    "TestingAssemblyVersion": "0.11.0.21",
+    "AssemblyVersion": "0.11.0.22",
+    "TestingAssemblyVersion": "0.11.0.22",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 14,
     "TestingDalamudApiLevel": 14,
     "IsHide": "False",
     "IsTestingExclusive": "False",
-    "DownloadLinkInstall": "https://meowrs.com/https://github.com/MeowZWR/SimpleHeels/releases/download/0.11.0.21/SimpleHeels.zip",
-    "DownloadLinkTesting": "https://meowrs.com/https://github.com/MeowZWR/SimpleHeels/releases/download/0.11.0.21/SimpleHeels.zip",
-    "DownloadLinkUpdate": "https://meowrs.com/https://github.com/MeowZWR/SimpleHeels/releases/download/0.11.0.21/SimpleHeels.zip",
+    "DownloadLinkInstall": "https://meowrs.com/https://github.com/MeowZWR/SimpleHeels/releases/download/0.11.0.22/SimpleHeels.zip",
+    "DownloadLinkTesting": "https://meowrs.com/https://github.com/MeowZWR/SimpleHeels/releases/download/0.11.0.22/SimpleHeels.zip",
+    "DownloadLinkUpdate": "https://meowrs.com/https://github.com/MeowZWR/SimpleHeels/releases/download/0.11.0.22/SimpleHeels.zip",
     "Changelog": ""
   }
 ]
