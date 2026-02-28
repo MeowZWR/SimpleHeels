@@ -1177,7 +1177,7 @@ public class ConfigWindow : Window {
                     TableHeaderRow(TableHeaderAlign.Right, TableHeaderAlign.Center, TableHeaderAlign.Center, TableHeaderAlign.Left);
                     var deleteIndex = -1;
                     for (var i = 0; i < characterConfig.HeelsConfig.Count; i++) {
-                        ImGui.BeginDisabled(beginDrag == i);
+                        using var disableIfDrag = ImRaii.Disabled(beginDrag == i);
                         ImGui.PushID($"heels_{i}");
                         var heelConfig = characterConfig.HeelsConfig[i];
                         heelConfig.Label ??= string.Empty;
@@ -1212,10 +1212,10 @@ public class ConfigWindow : Window {
 
                         ImGui.SameLine();
 
-                        if (beginDrag != i && heelConfig.Locked) ImGui.BeginDisabled(heelConfig.Locked);
-
-                        if (ImGui.Button($"{(char)FontAwesomeIcon.Trash}##delete", new Vector2(checkboxSize)) && ImGui.GetIO().KeyShift) {
-                            deleteIndex = i;
+                        using (ImRaii.Disabled(beginDrag != i && heelConfig.Locked)) {
+                            if (ImGui.Button($"{(char)FontAwesomeIcon.Trash}##delete", new Vector2(checkboxSize)) && ImGui.GetIO().KeyShift) {
+                                deleteIndex = i;
+                            }
                         }
 
                         if (ImGui.IsItemHovered() && !ImGui.GetIO().KeyShift) {
@@ -1225,7 +1225,6 @@ public class ConfigWindow : Window {
                         }
 
                         ImGui.SameLine();
-                        if (beginDrag != i && heelConfig.Locked) ImGui.EndDisabled();
                         ImGui.Button($"{(char)FontAwesomeIcon.ArrowsUpDown}", new Vector2(checkboxSize));
                         if (beginDrag == -1 && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled) && ImGui.IsMouseDown(ImGuiMouseButton.Left)) {
                             beginDrag = i;
@@ -1270,7 +1269,7 @@ public class ConfigWindow : Window {
                             ImGui.EndTooltip();
                         }
 
-                        if (beginDrag != i && heelConfig.Locked) ImGui.BeginDisabled(heelConfig.Locked);
+                        using var disableIfLockedAndNotDragging = ImRaii.Disabled(beginDrag != i && heelConfig.Locked);
 
                         ImGui.TableNextColumn();
                         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
@@ -1402,7 +1401,6 @@ public class ConfigWindow : Window {
                         }
 
                         ImGui.TableNextColumn();
-                        ImGui.EndDisabled();
 
                         if ((heelConfig.Slot == ModelSlot.Feet && ((heelConfig.PathMode == false && activeFootwear == heelConfig.ModelId) || (heelConfig.PathMode && activeFootwearPath != null && activeFootwearPath.Equals(heelConfig.Path, StringComparison.OrdinalIgnoreCase)))) || (heelConfig.Slot == ModelSlot.Legs && ((heelConfig.PathMode == false && activeLegs == heelConfig.ModelId) || (heelConfig.PathMode && activeLegsPath != null && activeLegsPath.Equals(heelConfig.Path, StringComparison.OrdinalIgnoreCase)))) || (heelConfig.Slot == ModelSlot.Top && ((heelConfig.PathMode == false && activeTop == heelConfig.ModelId) || (heelConfig.PathMode && activeTopPath != null && activeTopPath.Equals(heelConfig.Path, StringComparison.OrdinalIgnoreCase))))) {
                             ShowActiveOffsetMarker(activeCharacterAsCharacter != null, heelConfig.Enabled, activeHeelConfig?.Is(heelConfig) ?? false, "Currently Wearing");
