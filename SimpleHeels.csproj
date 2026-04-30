@@ -1,8 +1,8 @@
-<Project Sdk="Dalamud.NET.SDK/14.0.1">
+<Project Sdk="Dalamud.NET.SDK/15.0.0">
     <PropertyGroup>
         <LangVersion>preview</LangVersion>
         <AppendPlatformToOutputPath>false</AppendPlatformToOutputPath>
-        <Version>0.11.0.30</Version>
+        <Version>0.11.1.0</Version>
     </PropertyGroup>
 
     <ItemGroup>

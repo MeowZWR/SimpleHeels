@@ -312,11 +312,11 @@ public unsafe class Plugin : IDalamudPlugin {
         return terminateCharacterHook!.Original(character);
     }
 
-    private void* SetModeDetour(Character* character, CharacterModes mode, byte modeParam) {
+    private void SetModeDetour(Character* character, CharacterModes mode, byte modeParam) {
         OverrideEmotes.Remove(character->EntityId);
         var previousMode = character == null ? CharacterModes.None : character->Mode;
         try {
-            return setModeHook!.Original(character, mode, modeParam);
+            setModeHook!.Original(character, mode, modeParam);
         } finally {
             try {
                 var m = mode;
@@ -1225,7 +1225,7 @@ public unsafe class Plugin : IDalamudPlugin {
     private delegate void* SetDrawRotation(GameObject* gameObject, float rotation);
 
     private delegate void* TerminateCharacter(Character* character);
-    private delegate void* SetMode(Character* character, CharacterModes mode, byte modeParam);
+    private delegate void SetMode(Character* character, CharacterModes mode, byte modeParam);
 
     private delegate void* UpdateMountedPositions(Attach* a1);
 
