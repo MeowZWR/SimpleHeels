@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using System.Threading;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
@@ -23,6 +25,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
+using Lumina.Extensions;
 using Newtonsoft.Json;
 using SimpleHeels.Files;
 using SimpleHeels.Utility;
@@ -736,6 +739,7 @@ public class ConfigWindow : Window {
 
                 ImGui.Checkbox("按住SHIFT+右键点击偏移输入框可以重置数值", ref config.RightClickResetValue);
                 ImGui.Checkbox("显示角色重命名和复制UI", ref config.ShowCopyUi);
+                ImGui.Checkbox("显示特殊选项", ref config.ShowSpecialOptions);
 
                 ImGuiExt.Separator();
                 ImGui.Text("绕过卫月框架的插件UI隐藏机制：");
@@ -760,8 +764,8 @@ public class ConfigWindow : Window {
                     
                     ImGui.BeginTooltip();
                     
-                    ImGui.TextWrapped("临时偏移允许您在不更改配置的情况下调整当前偏移。当您开始、结束一个循环的情感动作时，或者使用“重置偏移”按钮手动重置时，偏移将自动重置。");
-                    ImGuiHelpers.ScaledDummy(350, 1);
+                    ImGuiExt.TextWrapped(350, "临时偏移允许您在不更改配置的情况下调整当前偏移。当您开始、结束一个循环的情感动作时，或者使用“重置偏移”按钮手动重置时，偏移将自动重置。");
+                    
                     ImGui.EndTooltip();
                 }
                 
@@ -806,11 +810,8 @@ public class ConfigWindow : Window {
                 }
 
                 if (ImGui.IsItemHovered()) {
-                    
                     ImGui.BeginTooltip();
-                    
-                    ImGui.TextWrapped("TODO: Live Posing Help");
-                    ImGuiHelpers.ScaledDummy(350, 1);
+                    ImGuiExt.TextWrapped(350, "TODO: Live Posing Help");
                     ImGui.EndTooltip();
                 }
                 
@@ -1867,6 +1868,25 @@ public class ConfigWindow : Window {
             ShowActiveOffsetMarker(activeCharacterAsCharacter != null && usingDefault, true, activeHeelConfig?.Is(characterConfig) ?? false, "默认偏移处于激活状态");
         }
 
+        if (Plugin.Config.ShowSpecialOptions && ImGui.CollapsingHeader("Special Options")) {
+            ImGui.TextDisabled("These options have little to nothing to do with heels. I just like them.");
+
+            var activeVoiceId = activeCharacterAsCharacter != null ? (ushort?) activeCharacterAsCharacter->Vfx.VoiceId : null;
+            
+            if (ImGui.BeginCombo("Custom Voice", characterConfig.CustomVoiceId == null ? $"[Default] Voice#{activeVoiceId}" : $"Voice#{characterConfig.CustomVoiceId.Value}", ImGuiComboFlags.HeightLargest)) {
+
+                if (ImGui.IsWindowAppearing() && voicePickerRace == 0) {
+                    voicePickerRace = activeCharacterAsCharacter->DrawData.CustomizeData.Race;
+                    voicePickerTribe = activeCharacterAsCharacter->DrawData.CustomizeData.Tribe;
+                    voicePickerFemale = activeCharacterAsCharacter->DrawData.CustomizeData.Sex == 1;
+                }
+                
+                
+                VoicePicker(ref characterConfig.CustomVoiceId, activeVoiceId);
+                
+                ImGui.EndCombo();
+            }
+        }
         if (Plugin.IsDebug && activeCharacter != null) {
             if (ImGui.TreeNode("Debug Information")) {
                 if (ImGui.TreeNode("激活偏移")) {
@@ -1929,6 +1949,101 @@ public class ConfigWindow : Window {
             }
         }
     }
+
+
+    private bool voicePickerFemale;
+    private uint voicePickerRace;
+    private uint voicePickerTribe;
+    
+
+    private bool VoicePicker(ref ushort? voiceId, ushort? activeVoiceId) {
+        var ret = false;
+        if (ImGui.Selectable("使用默认语音", voiceId == null)) {
+            voiceId = null;
+            ret = true;
+        }
+        
+        
+        
+        var activeTabName = voicePickerFemale ? "女性" : "男性";
+        if (ImGui.BeginTabBar("voicePickerSex")) {
+            using (ImRaii.PushColor(ImGuiCol.Tab, ImGui.GetColorU32(ImGuiCol.TabActive), !voicePickerFemale)) {
+                if (ImGui.TabItemButton("男性")) voicePickerFemale = false;
+            }
+            using (ImRaii.PushColor(ImGuiCol.Tab, ImGui.GetColorU32(ImGuiCol.TabActive), voicePickerFemale)) {
+                if (ImGui.TabItemButton("女性")) voicePickerFemale = true;
+            }
+            
+            ImGui.EndTabBar();
+        }
+        
+        if (ImGui.BeginTabBar("voicePickerRaceTribe")) {
+            foreach (var r in PluginService.Data.GetExcelSheet<Race>()) {
+                if (r.RowId == 0) continue;
+                if (r.RowId == 1) {
+                    // Split Hyur
+
+                    foreach (var t in PluginService.Data.GetExcelSheet<Tribe>().Where(t => t.RowId == r.RowId * 2 || t.RowId == t.RowId * 2 - 1)) {
+                        using (ImRaii.PushColor(ImGuiCol.Tab, ImGui.GetColorU32(ImGuiCol.TabActive), voicePickerTribe == t.RowId && voicePickerRace == r.RowId)) {
+                            if (ImGui.TabItemButton((voicePickerFemale ? t.Feminine : t.Masculine).ExtractText())) {
+                                voicePickerTribe = t.RowId;
+                                voicePickerRace = r.RowId;
+                            }
+
+                            if (voicePickerRace == r.RowId && voicePickerTribe == t.RowId) {
+                                activeTabName = $"{(voicePickerFemale ? "女性" : "男性")} {(voicePickerFemale ? t.Feminine : t.Masculine).ExtractText()}";
+                            }
+                            
+                        }
+                    }
+                    
+                } else {
+                    using (ImRaii.PushColor(ImGuiCol.Tab, ImGui.GetColorU32(ImGuiCol.TabActive), voicePickerRace == r.RowId)) {
+                        if (ImGui.TabItemButton((voicePickerFemale ? r.Feminine : r.Masculine).ExtractText())) {
+                            voicePickerTribe = r.RowId * 2 - 1;
+                            voicePickerRace = r.RowId;
+                        }
+                        
+                        if (voicePickerRace == r.RowId) {
+                            activeTabName = $"{(voicePickerFemale ? "女性" : "男性")} {(voicePickerFemale ? r.Feminine : r.Masculine).ExtractText()}";
+                        }
+                    }
+                }
+            }
+            
+            ImGui.EndTabBar();
+        }
+
+        if (!PluginService.Data.GetExcelSheet<CharaMakeType>().TryGetFirst(cmt => cmt.Race.RowId == voicePickerRace && cmt.Tribe.RowId == voicePickerTribe && cmt.Gender == (voicePickerFemale ? 1 : 0), out var charaMakeType))
+            return ret;
+        
+        for (var i = 0; i < charaMakeType.VoiceStruct.Count; i++) {
+            var voice = charaMakeType.VoiceStruct[i];
+            if (ImGui.Selectable($"{activeTabName} Voice#{i+1}", voice == voiceId || voiceId == null && activeVoiceId == voice)) {
+                voiceId = voice;
+                ret = true;
+            }
+
+            if (!ImGui.IsItemHovered()) continue;
+            var otherMatches = PluginService.Data.GetExcelSheet<CharaMakeType>().Where(cmt => cmt.VoiceStruct.Contains(voice)).Select(cmt => $"{(cmt.Gender == 1 ? "女性" : "男性")} {(cmt.Race.RowId == 1 ? (cmt.Gender == 1 ? cmt.Tribe.Value.Feminine : cmt.Tribe.Value.Masculine).ExtractText() : (cmt.Gender == 1 ? cmt.Race.Value.Feminine : cmt.Race.Value.Masculine).ExtractText())} Voice#{cmt.VoiceStruct.IndexOf(voice)+1}").Distinct().Where(str => !str.StartsWith(activeTabName)).ToList();
+
+            if (otherMatches.Count <= 0) continue;
+            using (ImRaii.Tooltip()) {
+                        
+                ImGui.Text("相同的语音：");
+                using (ImRaii.PushIndent()) {
+                    foreach (var m in otherMatches) {
+                        ImGui.Text($"{m}");
+                    }
+                }
+            }
+        }
+        
+
+        return ret;
+    }
+    
+
     private SimpleJsonViewer ipcDataViewer = new SimpleJsonViewer();
     private void ShowActiveOffsetMarker(bool show, bool isEnabled, bool isActive, string tooltipText) {
         if (!show) {

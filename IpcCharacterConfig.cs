@@ -24,9 +24,10 @@ public class IpcCharacterConfig : CharacterConfig {
     public unsafe IpcCharacterConfig(Plugin plugin, IPlayerCharacter player) {
         if (player == null) throw new Exception("No Player");
 
-        if (plugin.TryGetCharacterConfig(player, out var characterConfig, false) && characterConfig != null) {
+        if (plugin.TryGetCharacterConfig(player, out var characterConfig, false) && characterConfig is { Enabled: true }) {
             DefaultOffset = characterConfig.GetFirstMatch(player, false)?.GetOffset().Y ?? 0;
             EmoteConfigs = characterConfig?.EmoteConfigs?.Where(e => e.Enabled).Select(e => e.IpcClone()).ToList() ?? new List<EmoteConfig>();
+            CustomVoiceId = characterConfig?.CustomVoiceId;
         }
 
         if (Plugin.Tags.TryGetValue(player.EntityId, out var tags)) {
@@ -54,7 +55,7 @@ public class IpcCharacterConfig : CharacterConfig {
             }
         }
 
-        if (chr->Mode is CharacterModes.EmoteLoop or CharacterModes.InPositionLoop) {
+        if (chr->Mode is CharacterModes.EmoteLoop or CharacterModes.InPositionLoop && Plugin.Config.UsePrecisePositioning) {
             // Precise Positioning
             EmotePosition = new TempOffset(chr->GameObject.Position.X, chr->GameObject.Position.Y, chr->GameObject.Position.Z, chr->GameObject.Rotation);
         }
@@ -88,7 +89,7 @@ public class IpcCharacterConfig : CharacterConfig {
     public bool ShouldSerializeEmotePosition() => EmotePosition != null;
     public bool ShouldSerializePluginVersion() => !string.IsNullOrWhiteSpace(PluginVersion) && (
         ShouldSerializeDefaultOffset() || ShouldSerializeEmotePosition() || ShouldSerializeEmoteConfigs() || 
-        ShouldSerializeTempOffset() || ShouldSerializeMinionPosition() || ShouldSerializeTags()
+        ShouldSerializeTempOffset() || ShouldSerializeMinionPosition() || ShouldSerializeTags() || ShouldSerializeCustomVoiceId()
     );
 
     public override bool ShouldSerializeVersion() => ShouldSerializePluginVersion();
