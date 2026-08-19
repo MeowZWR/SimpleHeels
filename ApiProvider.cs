@@ -252,7 +252,7 @@ public static class ApiProvider {
 
                 PluginService.Framework.RunOnTick(() => {
                     localTagsChanged = false;
-                    PluginService.Log.Warning("Reporting to IPC");
+                    if (Plugin.IsDebug) PluginService.Log.Verbose("Reporting to IPC");
                     TimeSinceLastReport.Restart();
                     using (PerformanceMonitors.Run("Send IPC Message")) {
                         LastReportedData = json;
