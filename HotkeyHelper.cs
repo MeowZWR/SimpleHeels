@@ -12,6 +12,7 @@ public static class HotkeyHelper {
     private static string? _settingKey;
     private static string? _focused;
     private static readonly List<VirtualKey> NewKeys = [];
+    private static readonly VirtualKey[] IgnoreKeys = [VirtualKey.LCONTROL, VirtualKey.RCONTROL, VirtualKey.LSHIFT, VirtualKey.RSHIFT, VirtualKey.RMENU, VirtualKey.LMENU];
 
     private static readonly Dictionary<VirtualKey, string> NamedKeys = new() {
         { VirtualKey.KEY_0, "0" },
@@ -34,6 +35,7 @@ public static class HotkeyHelper {
 
     public static bool CheckHotkeyState(VirtualKey[] keys, bool clearOnPressed = true) {
         foreach (var vk in PluginService.KeyState.GetValidVirtualKeys()) {
+            if (IgnoreKeys.Contains(vk)) continue;
             if (keys.Contains(vk)) {
                 if (!PluginService.KeyState[vk]) return false;
             } else {
@@ -84,7 +86,7 @@ public static class HotkeyHelper {
                             break;
                         }
 
-                        NewKeys.Add((VirtualKey)k);
+                        if (!IgnoreKeys.Contains((VirtualKey)k)) NewKeys.Add((VirtualKey)k);
                     }
                 }
             }
