@@ -88,7 +88,14 @@ public static class ApiProvider {
             var gameObject = gameObjectIndex >= 0 && gameObjectIndex < PluginService.Objects.Length ? PluginService.Objects[gameObjectIndex] : null;
             if (gameObject is not IPlayerCharacter playerCharacter) return;
             if (string.IsNullOrWhiteSpace(data)) {
+                if (Plugin.IpcAssignedData.TryGetValue(playerCharacter.EntityId, out var removed)) {
+                    foreach (var t in removed.Tags) {
+                        _tagChanged.SendMessage(gameObjectIndex, t.Key, null);
+                    }
+                }
+            
                 Plugin.IpcAssignedData.Remove(playerCharacter.EntityId);
+                Plugin.RequestUpdateAll();
                 return;
             }
 
@@ -106,9 +113,7 @@ public static class ApiProvider {
             Plugin.IpcAssignedData.Add(playerCharacter.EntityId, assigned);
 
             foreach (var (tag, value) in assigned.Tags) {
-                if (tags.Remove(tag, out var oldValue)) {
-                    if (oldValue.Equals(value)) continue;
-                }
+                tags.Remove(tag);
                 _tagChanged.SendMessage(gameObjectIndex, tag, value);
             }
 
@@ -156,21 +161,11 @@ public static class ApiProvider {
                 Plugin.Tags.Add(playerCharacter.EntityId, tagDict);
             }
 
-            if (tagDict.TryGetValue(tag, out var oldValue)) {
-                if (value.Equals(oldValue)) return;
-                tagDict[tag] = value;
-                _tagChanged.SendMessage(gameObjectIndex, tag, value);
-                if (gameObject.ObjectIndex != 0) return;
-                localTagsChanged = true;
-                OnChanged();
-                return;
-            }
-
-            if (!tagDict.TryAdd(tag, value)) return;
-            
+            tagDict.TryGetValue(tag, out var oldValue);
+            tagDict[tag] = value;
             _tagChanged.SendMessage(gameObjectIndex, tag, value);
             if (gameObject.ObjectIndex != 0) return;
-            
+            if (value.Equals(oldValue)) return;
             localTagsChanged = true;
             OnChanged();
         });
