@@ -284,7 +284,7 @@ public unsafe class ExtraDebug : Window {
 
                 ImGui.Text($"Reaper Shroud:");
                 ImGui.SameLine();
-                Util.ShowStruct(&obj->ReaperShroud);
+                Util.ShowStruct(&obj->Transformation);
 
                 if (Plugin.ActorMapping.TryGetValue(actor.ObjectIndex, out var map)) ImGui.Text($"Clone of {map.name} @ {map.homeWorld}");
 
